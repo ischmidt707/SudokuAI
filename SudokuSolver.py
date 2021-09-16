@@ -8,28 +8,38 @@ solving sudoku puzzles of a range of difficulties.
 """
 
 class ConstraintSolver:
-    pass
+    def __init__(self):
+        self.operations = 0
+
+    def count():
+        operations += 1
 
 class BacktrackSimple(ConstraintSolver):
-    pass
+    def __init__(self):
+        super().__init__()
 
 class BacktrackFWCheck(ConstraintSolver):
-    pass
+    def __init__(self):
+        super().__init__()
 
 class BacktrackArcCons(ConstraintSolver):
-    pass
+    def __init__(self):
+        super().__init__()
 
 class LocalSearchSAMC(ConstraintSolver):
-    pass
+    def __init__(self):
+        super().__init__()
 
 class LocalSearchGenetic(ConstraintSolver):
-    pass
+    def __init__(self):
+        super().__init__()
+
 
 class Puzzle:
     def __init__(self, board):
         self.board = []
 
-    def import():
+    def importPuzzle():
         pass
 
 class Main:
