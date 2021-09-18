@@ -22,8 +22,13 @@ class ConstraintSolver:
     def count(self):
         self.operations += 1
 
+    # solve method will be overridden in all subclasses
     def solve(self):
-        pass
+        print("Solve needs to be overridden.")
+
+    # check if puzzle is solved (i.e, no zeros remain on board)
+    def isSolved(self):
+        return np.all(self.puzzle.board)
 
     # check if all constraints of the puzzle are met with new value added
     def constraintCheck(self, x, y, val):
@@ -96,6 +101,7 @@ class Puzzle:
                 line += 1
         return puzzle
 
+    # print puzzle into console
     def printPuzzle(self):
         print(self.board)
 
