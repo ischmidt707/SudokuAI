@@ -15,8 +15,11 @@ class ConstraintSolver:
     def __init__(self):
         self.operations = 0
 
-    def count():
-        operations += 1
+    def count(self):
+        self.operations += 1
+
+    def solve(self):
+        pass
 
 
 class BacktrackSimple(ConstraintSolver):
@@ -44,10 +47,12 @@ class LocalSearchGenetic(ConstraintSolver):
         super().__init__()
 
 
+# puzzle class used to input and store the puzzles being solved
 class Puzzle:
     def __init__(self, filename):
         self.board = self.importPuzzle(filename)
 
+    # import puzzle from csv file into 2d int array, where 0's replace ? from input file
     def importPuzzle(self, filename):
         with open(filename) as pfile:
             puzzle = np.zeros((9, 9), dtype=int)
@@ -60,10 +65,18 @@ class Puzzle:
                 line += 1
         return puzzle
 
+    def printPuzzle(self):
+        print(self.board)
+
 
 test = Puzzle("puzzles/Easy-P1.csv")
-print(test.board)
+test.printPuzzle()
 
 
 class Main:
-    pass
+
+    def __init__(self):
+        pass
+
+    def main(self):
+        pass
