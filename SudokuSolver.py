@@ -96,6 +96,33 @@ class BacktrackFWCheck(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
+    #forward checking function, to be done after every variable is assigned
+    def forwardCheck(self, x, y):
+        removed = False
+        for i in self.puzzle.domain[x][y]:
+            pass
+
+
+    # solve method overridden
+    def solve(self):
+        self.addOp()
+        print(self.operations)
+        self.printBoard()
+        if self.isSolved():
+            return True
+        var = self.find_loc()
+        x = var[0]
+        y = var[1]
+        for val in self.puzzle.domain[x][y]:
+            self.addOp()
+            if self.constraintCheck(x, y, val):
+                self.puzzle.board[x][y] = val
+                result = self.solve()
+                if result:
+                    return True
+                self.puzzle.board[x][y] = 0
+        return False
+
 
 # backtracking with arc consistentcy
 class BacktrackArcCons(ConstraintSolver):
@@ -143,7 +170,7 @@ class Puzzle:
         print(self.board)
 
 
-test = Puzzle("puzzles/Easy-P1.csv")
+test = Puzzle("puzzles/Evil-P5.csv")
 solvetest = BacktrackSimple(test)
 solvetest.solve()
 solvetest.printBoard()
