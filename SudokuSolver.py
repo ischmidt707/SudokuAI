@@ -55,11 +55,9 @@ class Puzzle:
             line = 0
             for row in puzzle_reader:
                 for i in range(0, 9):
-                    print(i)
                     if row[i] in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
                         puzzle[line, i] = int(row[i])
                 line += 1
-                print(puzzle)
         return puzzle
 
 
