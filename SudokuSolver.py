@@ -23,23 +23,34 @@ class ConstraintSolver:
     def addOp(self):
         self.operations += 1
 
+    def printBoard(self):
+        print(self.puzzle.board)
+
     # solve method will be overridden in all subclasses
     def solve(self):
         print("Solve needs to be overridden.")
 
     # check if puzzle is solved (i.e, no zeros remain on board)
+    # may need to be overidden in local search algs
     def isSolved(self):
         return np.all(self.puzzle.board)
+
+    # find next location without assigned value
+    def find_loc(self):
+        for i in range(0, 9):
+            for j in range(0, 9):
+                if (self.puzzle.board[i][j] == 0):
+                    return [i, j]
 
     # check if all constraints of the puzzle are met with new value added
     def constraintCheck(self, x, y, val):
         # check if there are duplicates in row
         for i in range(0, 9):
-            if (self.puzzle.board[x, i] == val):
+            if (self.puzzle.board[x][i] == val):
                 return False
         # check if there are duplicates in column
         for i in range(0, 9):
-            if (self.puzzle.board[i, y] == val):
+            if (self.puzzle.board[i][y] == val):
                 return False
         # check if there are duplicates in box
         xb = x - x % 3
@@ -59,14 +70,26 @@ class BacktrackSimple(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
-    # actual backtracking portion
-    def backtrack(self):
-        if self.isSolved():
-            return True
-        pass
     # solve method overridden
     def solve(self):
-        return self.backtrack(self)
+        self.addOp()
+        print(self.operations)
+        self.printBoard()
+        if self.isSolved():
+            return True
+        var = self.find_loc()
+        x = var[0]
+        y = var[1]
+        for val in self.puzzle.domain[x][y]:
+            self.addOp()
+            if self.constraintCheck(x, y, val):
+                self.puzzle.board[x][y] = val
+                result = self.solve()
+                if result:
+                    return True
+                self.puzzle.board[x][y] = 0
+        return False
+
 
 # backtracking with forward checking
 class BacktrackFWCheck(ConstraintSolver):
@@ -112,17 +135,18 @@ class Puzzle:
                         self.board[line][i] = int(row[i])
                         self.domain[line][i] = [int(row[i])]
                     else:
-                        self.domain[line][i] = [1,2,3,4,5,6,7,8,9]
+                        self.domain[line][i] = [1, 2, 3, 4, 5, 6, 7, 8, 9]
                 line += 1
 
     # print puzzle into console
     def printPuzzle(self):
         print(self.board)
-        print(self.domain)
 
 
 test = Puzzle("puzzles/Easy-P1.csv")
-test.printPuzzle()
+solvetest = BacktrackSimple(test)
+solvetest.solve()
+solvetest.printBoard()
 
 
 class Main:
