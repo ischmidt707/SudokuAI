@@ -72,9 +72,6 @@ class BacktrackSimple(ConstraintSolver):
 
     # solve method overridden
     def solve(self):
-        self.addOp()
-        print(self.operations)
-        self.printBoard()
         if self.isSolved():
             return True
         var = self.find_loc()
@@ -96,23 +93,39 @@ class BacktrackFWCheck(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
-    #forward checking function, to be done after every variable is assigned
-    def forwardCheck(self, x, y):
-        removed = False
+    # removes any inconsistent values from domain of current var
+    def removeInconsistent(self, x, y, a, b):
+        tboard = np.copy(self.puzzle.board)
+        removed = True
         for i in self.puzzle.domain[x][y]:
-            pass
+            tboard[x][y] = i
+            for j in self.puzzle.domain[a][b]:
+                if i != j:
+                    removed = False
+            if removed:
+                self.puzzle.domain[x][y].remove(i)
+            removed = False
 
+    # forward checking function, to be done after once each variable is chosen
+    def forwardCheck(self, x, y):
+        for i in range(0, 9):
+            self.removeInconsistent(x, y, i, y)
+        for i in range(0, 9):
+            self.removeInconsistent(x, y, x, i)
+        xb = x - x % 3
+        yb = y - y % 3
+        for i in range(0, 3):
+            for j in range(0, 3):
+                self.removeInconsistent(x, y, xb + i, yb + j)
 
     # solve method overridden
     def solve(self):
-        self.addOp()
-        print(self.operations)
-        self.printBoard()
         if self.isSolved():
             return True
         var = self.find_loc()
         x = var[0]
         y = var[1]
+        self.forwardCheck(x, y)
         for val in self.puzzle.domain[x][y]:
             self.addOp()
             if self.constraintCheck(x, y, val):
@@ -172,8 +185,13 @@ class Puzzle:
 
 test = Puzzle("puzzles/Evil-P5.csv")
 solvetest = BacktrackSimple(test)
+solvefwtest = BacktrackFWCheck(test)
 solvetest.solve()
+solvefwtest.solve()
+print(solvetest.operations)
 solvetest.printBoard()
+print(solvefwtest.operations)
+solvefwtest.printBoard()
 
 
 class Main:
