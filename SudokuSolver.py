@@ -4,7 +4,8 @@ Project 1 for CSCI 446
 Isaac Schmidt and Nic Dzomba
 
 Description: Testing implementations of 5 different AI algorithms for
-solving sudoku puzzles of a range of difficulties.
+solving sudoku puzzles of a range of difficulties, and evaluating performance
+based on number of operations to solve.
 """
 
 import numpy as np
@@ -19,7 +20,7 @@ class ConstraintSolver:
         self.puzzle = copy.deepcopy(puzzle)
 
     # count number of operations to provide hardware independent evaluation of algorithm efficiency
-    def count(self):
+    def addOp(self):
         self.operations += 1
 
     # solve method will be overridden in all subclasses
@@ -58,6 +59,14 @@ class BacktrackSimple(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
+    # actual backtracking portion
+    def backtrack(self):
+        if self.isSolved():
+            return True
+        pass
+    # solve method overridden
+    def solve(self):
+        return self.backtrack(self)
 
 # backtracking with forward checking
 class BacktrackFWCheck(ConstraintSolver):
@@ -86,24 +95,30 @@ class LocalSearchGenetic(ConstraintSolver):
 # puzzle class used to input and store the puzzles being solved
 class Puzzle:
     def __init__(self, filename):
-        self.board = self.importPuzzle(filename)
+        # domain of possible values for solution
+        self.domain = np.zeros((9, 9), dtype=np.ndarray)
+        # values currently on board
+        self.board = np.zeros((9, 9), dtype=int)
+        self.importPuzzle(filename)
 
     # import puzzle from csv file into 2d int array, where 0's replace ? from input file
     def importPuzzle(self, filename):
         with open(filename) as pfile:
-            puzzle = np.zeros((9, 9), dtype=int)
             puzzle_reader = csv.reader(pfile, delimiter=',')
             line = 0
             for row in puzzle_reader:
                 for i in range(0, 9):
                     if row[i] in ("1", "2", "3", "4", "5", "6", "7", "8", "9"):
-                        puzzle[line, i] = int(row[i])
+                        self.board[line][i] = int(row[i])
+                        self.domain[line][i] = [int(row[i])]
+                    else:
+                        self.domain[line][i] = [1,2,3,4,5,6,7,8,9]
                 line += 1
-        return puzzle
 
     # print puzzle into console
     def printPuzzle(self):
         print(self.board)
+        print(self.domain)
 
 
 test = Puzzle("puzzles/Easy-P1.csv")
