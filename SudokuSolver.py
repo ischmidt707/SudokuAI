@@ -93,12 +93,10 @@ class BacktrackFWCheck(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
-    # removes any inconsistent values from domain of current var
+    # removes any values at (x,y) that make in inconsistent at (a,b)
     def removeInconsistent(self, x, y, a, b):
-        tboard = np.copy(self.puzzle.board)
         removed = True
         for i in self.puzzle.domain[x][y]:
-            tboard[x][y] = i
             for j in self.puzzle.domain[a][b]:
                 if i != j:
                     removed = False
@@ -141,6 +139,23 @@ class BacktrackFWCheck(ConstraintSolver):
 class BacktrackArcCons(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
+
+    # solve method overridden
+    def solve(self):
+        if self.isSolved():
+            return True
+        var = self.find_loc()
+        x = var[0]
+        y = var[1]
+        for val in self.puzzle.domain[x][y]:
+            self.addOp()
+            if self.constraintCheck(x, y, val):
+                self.puzzle.board[x][y] = val
+                result = self.solve()
+                if result:
+                    return True
+                self.puzzle.board[x][y] = 0
+        return False
 
 
 # simulated annealing with miinum conflict heuristic
