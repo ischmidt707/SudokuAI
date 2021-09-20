@@ -11,6 +11,7 @@ based on number of operations to solve.
 import numpy as np
 import csv
 import copy
+import random
 
 
 class ConstraintSolver:
@@ -31,7 +32,7 @@ class ConstraintSolver:
         print("Solve needs to be overridden.")
 
     # check if puzzle is solved (i.e, no zeros remain on board)
-    # may need to be overidden in local search algs
+    # may need to be overridden in local search algs
     def isSolved(self):
         return np.all(self.puzzle.board)
 
@@ -61,6 +62,33 @@ class ConstraintSolver:
                     return False
         # all constraints pass
         return True
+
+    #Calculating fitness of a potential solution; low scores better
+    def updateFitness(self, genome):
+        #We count the cell as a duplicate with itself in each check,
+        # so to account for this we simply start at -(81*3)=-243 for the 3
+        # false positive duplicates each cell will get.
+        fit = -243
+        for x in range(9):
+            for y in range(9):
+                # count duplicates in row
+                for i in range(0, 9):
+                    if (genome.board[x][i] == genome.board[x][y]):
+                        fit += 1
+                # count duplicates in column
+                for i in range(0, 9):
+                    if (genome.board[i][y] == genome.board[x][y]):
+                        fit += 1
+                # count duplicates in box
+                xb = x - x % 3
+                yb = y - y % 3
+                for i in range(0, 3):
+                    for j in range(0, 3):
+                        if (genome.board[xb + i][yb + j] == genome.board[x][y]):
+                            fit += 1
+        #fitness is calculated as the sum of all constraint violations.
+        genome.fitness = fit
+
 
 
 # all specific solvers have constraintsolver as superclass
@@ -135,7 +163,7 @@ class BacktrackFWCheck(ConstraintSolver):
         return False
 
 
-# backtracking with arc consistentcy
+# backtracking with arc consistency
 class BacktrackArcCons(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
@@ -158,7 +186,7 @@ class BacktrackArcCons(ConstraintSolver):
         return False
 
 
-# simulated annealing with miinum conflict heuristic
+# simulated annealing with minimum conflict heuristic
 class LocalSearchSAMC(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
@@ -168,6 +196,100 @@ class LocalSearchSAMC(ConstraintSolver):
 class LocalSearchGenetic(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
+        self.population = []
+        self.protected = []
+        self.bestFitness = 1000000
+        self.leader = None
+
+    # creating a new potential solution from scratch
+    def newGenome(self):
+        genome = copy.deepcopy(self.puzzle)
+        for x in range(9):
+            for y in range(9):
+                #fill up whole board randomly
+                if [x,y] not in self.protected:
+                    genome.board[x][y] = random.randint(0,8)
+        # keeping track of how good our best solution is
+        self.updateFitness(genome)
+        if genome.fitness < self.bestFitness:
+            self.bestFitness = genome.fitness
+            self.leader = genome
+        return genome
+
+    def initPop(self, popSize):
+        for i in range(popSize):
+            self.population.append(self.newGenome())
+
+    def crossMutate(self, mutation, parent1, parent2):
+        # randomly select point for cross mutation, that doesn't include the ends
+        crossPoint = random.randint(1,80)
+        # first, delete mutation's board and replace with parent2's board
+        mutation.board = parent2.board
+        # then replace the first crossPoint number of cells with parent1's cells
+        for point in range(crossPoint):
+            x = point % 9
+            y = (point - (point % 9)) // 9
+            mutation.board[x][y] = parent1.board[x][y]
+
+        # updating fitness and checking for new leader
+        self.updateFitness(mutation)
+        if mutation.fitness < self.bestFitness:
+            self.bestFitness = mutation.fitness
+            self.leader = mutation
+
+    def mutate(self, mutation):
+        # randomly change 3 cells
+        for i in range(3):
+            x = random.randint(0,8)
+            y = random.randint(0,8)
+            if [x,y] not in self.protected:
+                mutation.board[x][y] = random.randint(1,9)
+
+        # updating fitness and checking for new leader
+        self.updateFitness(mutation)
+        if mutation.fitness < self.bestFitness:
+            self.bestFitness = mutation.fitness
+            self.leader = mutation
+
+    def solve(self, popSize, tourneySize, iterations):
+        #popSize = total population size
+        #tourneySize = how many solutions we select for each tournament
+        #iterations = number of times we run an evolution tournament (steady-state replacement)
+
+        #Identifying the given values that should never be changed
+        for x in range(9):
+            for y in range(9):
+                if self.puzzle.board[x][y] != 0:
+                    self.protected.append([x,y])
+
+        # create the beginning population
+        self.initPop(popSize)
+        print("starting best fitness:")
+        print(self.leader.fitness)
+
+        # select and rank a tournament subset of the population, iter times.
+        for iter in range(iterations):
+            selection = random.sample(self.population, tourneySize)
+            rankedTourney = []
+            # determine rank position
+            for s in selection:
+                self.updateFitness(s)
+                # put genome into first position if it's the first genome to be ranked
+                if not rankedTourney:
+                    rankedTourney.append(s)
+                else:
+                    position = 0
+                    while position < len(rankedTourney) and rankedTourney[position].fitness < s.fitness:
+                        position += 1
+                    rankedTourney.insert(position, s)
+            # replace the lowest ranked genome in tournament with a cross mutation of best 2.
+            self.crossMutate(rankedTourney[-1], rankedTourney[0], rankedTourney[1])
+            self.addOp()
+            # randomly mutate the 3rd best in the tournament
+            #self.mutate(rankedTourney[2])
+            #self.addOp()
+
+
 
 
 # puzzle class used to input and store the puzzles being solved
@@ -178,6 +300,8 @@ class Puzzle:
         # values currently on board
         self.board = np.zeros((9, 9), dtype=int)
         self.importPuzzle(filename)
+        # initialize fitness as very bad, for possible use later
+        self.fitness = 1000000
 
     # import puzzle from csv file into 2d int array, where 0's replace ? from input file
     def importPuzzle(self, filename):
@@ -199,6 +323,7 @@ class Puzzle:
 
 
 test = Puzzle("puzzles/Evil-P5.csv")
+"""
 solvetest = BacktrackSimple(test)
 solvefwtest = BacktrackFWCheck(test)
 solvetest.solve()
@@ -207,6 +332,12 @@ print(solvetest.operations)
 solvetest.printBoard()
 print(solvefwtest.operations)
 solvefwtest.printBoard()
+"""
+tournamentTest = LocalSearchGenetic(test)
+tournamentTest.solve(100, 10, 10000)
+print(tournamentTest.operations)
+print(tournamentTest.leader.fitness)
+print(tournamentTest.leader.board)
 
 
 class Main:
