@@ -12,6 +12,7 @@ import numpy as np
 import csv
 import copy
 import random
+from queue import Queue
 
 
 class ConstraintSolver:
@@ -130,7 +131,8 @@ class BacktrackFWCheck(ConstraintSolver):
                     removed = False
             if removed:
                 self.puzzle.domain[x][y].remove(i)
-            removed = False
+            else:
+                removed = True
 
     # forward checking function, to be done after once each variable is chosen
     def forwardCheck(self, x, y):
@@ -168,6 +170,24 @@ class BacktrackArcCons(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
+    # removes any values at (x,y) that make in inconsistent at (a,b)
+    def removeInconsistent(self, x, y, a, b):
+        removed = True
+        for i in self.puzzle.domain[x][y]:
+            for j in self.puzzle.domain[a][b]:
+                if i != j:
+                    removed = False
+            if removed:
+                self.puzzle.domain[x][y].remove(i)
+            else:
+                removed = True
+        return removed
+
+    def arccons(self):
+        queue = Queue()
+
+        while not queue.empty():
+            pass
     # solve method overridden
     def solve(self):
         if self.isSolved():
@@ -325,7 +345,7 @@ class Puzzle:
 
 
 test = Puzzle("puzzles/Evil-P5.csv")
-"""
+
 solvetest = BacktrackSimple(test)
 solvefwtest = BacktrackFWCheck(test)
 solvetest.solve()
@@ -334,13 +354,14 @@ print(solvetest.operations)
 solvetest.printBoard()
 print(solvefwtest.operations)
 solvefwtest.printBoard()
+
 """
 tournamentTest = LocalSearchGenetic(test)
 tournamentTest.solve(100, 10, 20000)
 print(tournamentTest.operations)
 print(tournamentTest.leader.fitness)
 print(tournamentTest.leader.board)
-
+"""
 
 class Main:
 
