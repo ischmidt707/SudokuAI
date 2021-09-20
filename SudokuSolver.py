@@ -252,11 +252,11 @@ class LocalSearchGenetic(ConstraintSolver):
             self.leader = mutation
 
     def solve(self, popSize, tourneySize, iterations):
-        #popSize = total population size
-        #tourneySize = how many solutions we select for each tournament
-        #iterations = number of times we run an evolution tournament (steady-state replacement)
+        # popSize = total population size
+        # tourneySize = how many solutions we select for each tournament
+        # iterations = number of times we run an evolution tournament (steady-state replacement)
 
-        #Identifying the given values that should never be changed
+        # Identifying the given values that should never be changed
         for x in range(9):
             for y in range(9):
                 if self.puzzle.board[x][y] != 0:
@@ -282,12 +282,14 @@ class LocalSearchGenetic(ConstraintSolver):
                     while position < len(rankedTourney) and rankedTourney[position].fitness < s.fitness:
                         position += 1
                     rankedTourney.insert(position, s)
-            # replace the lowest ranked genome in tournament with a cross mutation of best 2.
-            self.crossMutate(rankedTourney[-1], rankedTourney[0], rankedTourney[1])
-            self.addOp()
-            # randomly mutate the 3rd best in the tournament
-            #self.mutate(rankedTourney[2])
+            # replace the lowest ranked genome in tournament with a cross mutation of best 2 (currently decommissioned)
+            #self.crossMutate(rankedTourney[-1], rankedTourney[0], rankedTourney[1])
             #self.addOp()
+
+            # replace lowest ranked genome with a mutation of best ranked genome
+            rankedTourney[-1].board = copy.deepcopy(rankedTourney[0].board)
+            self.mutate(rankedTourney[-1])
+            self.addOp()
 
 
 
@@ -334,7 +336,7 @@ print(solvefwtest.operations)
 solvefwtest.printBoard()
 """
 tournamentTest = LocalSearchGenetic(test)
-tournamentTest.solve(100, 10, 10000)
+tournamentTest.solve(100, 10, 20000)
 print(tournamentTest.operations)
 print(tournamentTest.leader.fitness)
 print(tournamentTest.leader.board)
