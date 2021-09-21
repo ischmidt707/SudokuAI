@@ -195,12 +195,17 @@ class BacktrackArcCons(ConstraintSolver):
                         c3 = (i, j, k, j)
                         queue.append(c3)
                         neighbors[(i, j)].append((k, j))
-                for k in range(i % 3, i):
-                    for l in range(j % 3, j):
-                        if (k != i) and (l != j):
-                            c1 = (i, j, k, l)
+                ia = i - i % 3
+                ja = j - j % 3
+                for k in range(0, 3):
+                    for l in range(0, 3):
+                        ka = ia + k
+                        la = ja + l
+                        if (ka != i) and (la != j):
+                            c1 = (i, j, ka, la)
                             queue.append(c1)
-                            neighbors[(i, j)].append((k, l))
+                            neighbors[(i, j)].append((ka, la))
+        queue = list(set(queue))
         for key in neighbors.keys():
             neighbors[key] = list(set(neighbors[key]))
 
@@ -225,6 +230,7 @@ class BacktrackArcCons(ConstraintSolver):
             b = pair[3]
             if self.removeInconsistent(x, y, a, b):
                 if len(self.puzzle.domain[x][y]) == 0:
+                    print("Failed")
                     return False
                 for n in neighbors[(x, y)]:
                     queue.append((n[0], n[1], x, y))
@@ -386,7 +392,7 @@ class Puzzle:
         print(self.board)
 
 
-test = Puzzle("puzzles/Evil-P3.csv")
+test = Puzzle("puzzles/Easy-P1.csv")
 
 solvetest = BacktrackSimple(test)
 solvefwtest = BacktrackFWCheck(test)
