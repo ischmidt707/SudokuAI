@@ -226,9 +226,9 @@ class LocalSearchGenetic(ConstraintSolver):
         genome = copy.deepcopy(self.puzzle)
         for x in range(9):
             for y in range(9):
-                #fill up whole board randomly
+                # fill up whole board randomly
                 if [x,y] not in self.protected:
-                    genome.board[x][y] = random.randint(0,8)
+                    genome.board[x][y] = random.randint(1,9)
         # keeping track of how good our best solution is
         self.updateFitness(genome)
         if genome.fitness < self.bestFitness:
@@ -289,9 +289,11 @@ class LocalSearchGenetic(ConstraintSolver):
 
         # select and rank a tournament subset of the population, iter times.
         for iter in range(iterations):
+            self.addOp()
             selection = random.sample(self.population, tourneySize)
             rankedTourney = []
             # determine rank position
+            self.addOp()
             for s in selection:
                 self.updateFitness(s)
                 # put genome into first position if it's the first genome to be ranked
@@ -345,7 +347,7 @@ class Puzzle:
 
 
 test = Puzzle("puzzles/Evil-P5.csv")
-
+"""
 solvetest = BacktrackSimple(test)
 solvefwtest = BacktrackFWCheck(test)
 solvetest.solve()
@@ -357,11 +359,11 @@ solvefwtest.printBoard()
 
 """
 tournamentTest = LocalSearchGenetic(test)
-tournamentTest.solve(100, 10, 20000)
+tournamentTest.solve(100, 10, 5000)
 print(tournamentTest.operations)
 print(tournamentTest.leader.fitness)
 print(tournamentTest.leader.board)
-"""
+
 
 class Main:
 
