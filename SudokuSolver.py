@@ -122,27 +122,28 @@ class BacktrackFWCheck(ConstraintSolver):
 
     # removes any values at (x,y) that make it inconsistent at (a,b)
     def removeInconsistent(self, x, y, a, b):
-        removed = True
+        removelist = []
         for i in self.puzzle.domain[x][y]:
             for j in self.puzzle.domain[a][b]:
-                if i != j:
-                    removed = False
-            if removed:
-                self.puzzle.domain[x][y].remove(i)
-            else:
-                removed = True
+                if (i == j) and (len(self.puzzle.domain[a][b]) == 1):
+                    removelist.append(i)
+        for i in removelist:
+            self.puzzle.domain[x][y].remove(i)
 
     # forward checking function, to be done after once each variable is chosen
     def forwardCheck(self, x, y):
         for i in range(0, 9):
-            self.removeInconsistent(x, y, i, y)
+            if x != i:
+                self.removeInconsistent(x, y, i, y)
         for i in range(0, 9):
-            self.removeInconsistent(x, y, x, i)
+            if y != i:
+                self.removeInconsistent(x, y, x, i)
         xb = x - x % 3
         yb = y - y % 3
         for i in range(0, 3):
             for j in range(0, 3):
-                self.removeInconsistent(x, y, xb + i, yb + j)
+                if (x != xb + i) and (y != yb + j):
+                    self.removeInconsistent(x, y, xb + i, yb + j)
 
     # solve method overridden
     def solve(self):
@@ -170,12 +171,16 @@ class BacktrackArcCons(ConstraintSolver):
 
     # removes any values at (x,y) that make it inconsistent at (a,b)
     def removeInconsistent(self, x, y, a, b):
+        removed = False
+        removelist = []
         for i in self.puzzle.domain[x][y]:
-            if len(self.puzzle.domain[a][b] - [i]) == 0:
-                self.puzzle.domain[x][y].remove(i)
-                return True
-        return False
-
+            for j in self.puzzle.domain[a][b]:
+                if (i == j) and (len(self.puzzle.domain[a][b]) == 1):
+                    removelist.append(i)
+                    removed = True
+        for i in removelist:
+            self.puzzle.domain[x][y].remove(i)
+        return removed
 
     def genConstraints(self, queue, neighbors):
         # gen constraints for rows and columns
@@ -196,6 +201,8 @@ class BacktrackArcCons(ConstraintSolver):
                             c1 = (i, j, k, l)
                             queue.append(c1)
                             neighbors[(i, j)].append((k, l))
+        for key in neighbors.keys():
+            neighbors[key] = list(set(neighbors[key]))
 
     # generate neighbors dict
     def initNeighbors(self, neighbors):
@@ -216,11 +223,11 @@ class BacktrackArcCons(ConstraintSolver):
             y = pair[1]
             a = pair[2]
             b = pair[3]
-            if self.removeInconsistent(x,y,a,b):
+            if self.removeInconsistent(x, y, a, b):
                 if len(self.puzzle.domain[x][y]) == 0:
                     return False
                 for n in neighbors[(x, y)]:
-                    queue.append(n[0], n[1], x, y)
+                    queue.append((n[0], n[1], x, y))
         return True
 
     # solve method overridden
@@ -379,7 +386,7 @@ class Puzzle:
         print(self.board)
 
 
-test = Puzzle("puzzles/Evil-P5.csv")
+test = Puzzle("puzzles/Evil-P3.csv")
 
 solvetest = BacktrackSimple(test)
 solvefwtest = BacktrackFWCheck(test)
