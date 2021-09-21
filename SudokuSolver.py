@@ -452,17 +452,8 @@ class Puzzle:
     def printPuzzle(self):
         print(self.board)
 
-print("Easy puzzle 1:")
-e1 = Puzzle("puzzles/Easy-P1.csv")
-annealTest = LocalSearchSAMC(e1)
-print(annealTest.solve())
-
 # Main class, for the code we are actually running
 # Currently just filled with various data collection things
-
-test = Puzzle("puzzles/Med-P5.csv")
-annealTest = LocalSearchSAMC(test)
-annealTest.solve()
 
 class Main:
 
@@ -471,10 +462,32 @@ class Main:
 
     def main(self):
 
-        test = Puzzle("puzzles/Evil-P5.csv")
+        test = Puzzle("puzzles/Hard-P3.csv")
         BS = BacktrackSimple(test)
         BFW = BacktrackFWCheck(test)
         BAC = BacktrackArcCons(test)
+        GA = LocalSearchGenetic(test)
+        SA = LocalSearchSAMC(test)
+
+        test.printPuzzle()
+        BS.solve()
+        print(BS.operations)
+        BS.puzzle.printPuzzle()
+        BFW.solve()
+        print(BFW.operations)
+        BFW.puzzle.printPuzzle()
+        BAC.solve()
+        print(BAC.operations)
+        BAC.puzzle.printPuzzle()
+        SA.solve()
+        SA.puzzle.printPuzzle()
+        print(SA.puzzle.fitness)
+        GA.solve(100, 10, 2000)
+        print(GA.leader.fitness)
+        print(GA.leader.board)
+
+
+
         """
         puzzlelist = []
         bslist = []
