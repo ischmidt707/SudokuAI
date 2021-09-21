@@ -12,6 +12,7 @@ import numpy as np
 import csv
 import copy
 import random
+import math
 
 
 class ConstraintSolver:
@@ -64,6 +65,7 @@ class ConstraintSolver:
         return True
 
     # Calculating fitness of a potential solution; low scores better
+    # This also acts as our minimum conflict heuristic for simulated annealing.
     def updateFitness(self, genome):
         # We count the cell as a duplicate with itself in each check,
         # so to account for this we simply start at -(81*3)=-243 for the 3
@@ -260,6 +262,61 @@ class BacktrackArcCons(ConstraintSolver):
 class LocalSearchSAMC(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
+        self.protected = []
+
+        #
+        self.k = 1
+        # variables for our schedule function:
+        self.T0 = 1000
+        self.tao = 50
+        self.Nt = 3
+
+    def createStartPoint(self):
+        for x in range(9):
+            for y in range(9):
+                # fill up whole board randomly
+                if [x,y] not in self.protected:
+                    self.puzzle.board[x][y] = random.randint(1,9)
+        # keeping track of how good our current state is based on minimum conflict heuristic
+        self.updateFitness(self.puzzle)
+
+    # Rate of temperature decrease based on time t.  Returns temperature T.
+    def schedule(self, t):
+        return (self.T0/(1+math.log(1+t))) - (0.003*t)
+        #return (self.T0*self.tao)/(self.tao+self.Nt)
+
+    def solve(self):
+        # Create a random starting board, to be our initial start state.
+        # self.puzzle.board will always be used as the current state.
+        self.createStartPoint()
+        print("Starting number of conflicts:")
+        print(self.puzzle.fitness)
+        # t is the time step, starting at 0.
+        for t in range(100000):
+            T = self.schedule(t)
+            if T <= 0:
+                return self.puzzle.board
+            next = copy.deepcopy(self.puzzle)
+            # randomly change Nt number of cells
+            for i in range(self.Nt):
+                x = random.randint(0, 8)
+                y = random.randint(0, 8)
+                if [x, y] not in self.protected:
+                    next.board[x][y] = random.randint(1, 9)
+            self.updateFitness(next)
+            dif = self.puzzle.fitness - next.fitness
+            if dif > 0:
+                self.puzzle.board = copy.deepcopy(next.board)
+                self.updateFitness(self.puzzle)
+            elif math.exp(dif/(self.k * T)) > random.random():
+                self.puzzle.board = copy.deepcopy(next.board)
+                self.updateFitness(self.puzzle)
+            if t % 1000 == 0:
+                print(T)
+                print(self.puzzle.fitness)
+        print(self.puzzle.board)
+
+
 
 
 # genetic algorithm w/ penalty function and tournament selection
@@ -394,7 +451,9 @@ class Puzzle:
         print(self.board)
 
 
-test = Puzzle("puzzles/Evil-P5.csv")
+test = Puzzle("puzzles/Med-P5.csv")
+annealTest = LocalSearchSAMC(test)
+annealTest.solve()
 """
 test = Puzzle("puzzles/Easy-P1.csv")
 
@@ -411,13 +470,13 @@ solvefwtest.printBoard()
 print(solveactest.operations)
 solveactest.printBoard()
 
-"""
+
 tournamentTest = LocalSearchGenetic(test)
 tournamentTest.solve(100, 10, 20000)
 print(tournamentTest.operations)
 print(tournamentTest.leader.fitness)
 print(tournamentTest.leader.board)
-
+"""
 
 
 class Main:
