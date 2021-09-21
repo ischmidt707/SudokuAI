@@ -12,7 +12,6 @@ import numpy as np
 import csv
 import copy
 import random
-from queue import Queue
 
 
 class ConstraintSolver:
@@ -64,9 +63,9 @@ class ConstraintSolver:
         # all constraints pass
         return True
 
-    #Calculating fitness of a potential solution; low scores better
+    # Calculating fitness of a potential solution; low scores better
     def updateFitness(self, genome):
-        #We count the cell as a duplicate with itself in each check,
+        # We count the cell as a duplicate with itself in each check,
         # so to account for this we simply start at -(81*3)=-243 for the 3
         # false positive duplicates each cell will get.
         fit = -243
@@ -87,9 +86,8 @@ class ConstraintSolver:
                     for j in range(0, 3):
                         if (genome.board[xb + i][yb + j] == genome.board[x][y]):
                             fit += 1
-        #fitness is calculated as the sum of all constraint violations.
+        # fitness is calculated as the sum of all constraint violations.
         genome.fitness = fit
-
 
 
 # all specific solvers have constraintsolver as superclass
@@ -122,29 +120,30 @@ class BacktrackFWCheck(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
-    # removes any values at (x,y) that make in inconsistent at (a,b)
+    # removes any values at (x,y) that make it inconsistent at (a,b)
     def removeInconsistent(self, x, y, a, b):
-        removed = True
+        removelist = []
         for i in self.puzzle.domain[x][y]:
             for j in self.puzzle.domain[a][b]:
-                if i != j:
-                    removed = False
-            if removed:
-                self.puzzle.domain[x][y].remove(i)
-            else:
-                removed = True
+                if (i == j) and (len(self.puzzle.domain[a][b]) == 1):
+                    removelist.append(i)
+        for i in removelist:
+            self.puzzle.domain[x][y].remove(i)
 
     # forward checking function, to be done after once each variable is chosen
     def forwardCheck(self, x, y):
         for i in range(0, 9):
-            self.removeInconsistent(x, y, i, y)
+            if x != i:
+                self.removeInconsistent(x, y, i, y)
         for i in range(0, 9):
-            self.removeInconsistent(x, y, x, i)
+            if y != i:
+                self.removeInconsistent(x, y, x, i)
         xb = x - x % 3
         yb = y - y % 3
         for i in range(0, 3):
             for j in range(0, 3):
-                self.removeInconsistent(x, y, xb + i, yb + j)
+                if (x != xb + i) and (y != yb + j):
+                    self.removeInconsistent(x, y, xb + i, yb + j)
 
     # solve method overridden
     def solve(self):
@@ -170,26 +169,77 @@ class BacktrackArcCons(ConstraintSolver):
     def __init__(self, puzzle):
         super().__init__(puzzle)
 
-    # removes any values at (x,y) that make in inconsistent at (a,b)
+    # removes any values at (x,y) that make it inconsistent at (a,b)
     def removeInconsistent(self, x, y, a, b):
-        removed = True
+        removed = False
+        removelist = []
         for i in self.puzzle.domain[x][y]:
             for j in self.puzzle.domain[a][b]:
-                if i != j:
-                    removed = False
-            if removed:
-                self.puzzle.domain[x][y].remove(i)
-            else:
-                removed = True
+                if (i == j) and (len(self.puzzle.domain[a][b]) == 1):
+                    removelist.append(i)
+                    removed = True
+        for i in removelist:
+            self.puzzle.domain[x][y].remove(i)
         return removed
 
-    def arccons(self):
-        queue = Queue()
+    def genConstraints(self, queue, neighbors):
+        # gen constraints for rows and columns
+        for i in range(0, 9):
+            for j in range(0, 9):
+                for k in range(0, 9):
+                    if k != j:
+                        c1 = (i, j, i, k)
+                        queue.append(c1)
+                        neighbors[(i, j)].append((i, k))
+                    if k != i:
+                        c3 = (i, j, k, j)
+                        queue.append(c3)
+                        neighbors[(i, j)].append((k, j))
+                ia = i - i % 3
+                ja = j - j % 3
+                for k in range(0, 3):
+                    for l in range(0, 3):
+                        ka = ia + k
+                        la = ja + l
+                        if (ka != i) and (la != j):
+                            c1 = (i, j, ka, la)
+                            queue.append(c1)
+                            neighbors[(i, j)].append((ka, la))
+        queue = list(set(queue))
+        for key in neighbors.keys():
+            neighbors[key] = list(set(neighbors[key]))
 
-        while not queue.empty():
-            pass
+    # generate neighbors dict
+    def initNeighbors(self, neighbors):
+        for i in range(0, 9):
+            for j in range(0, 9):
+                key = (i, j)
+                neighbors[key] = []
+
+    def AC3(self):
+        queue = []
+        neighbors = {}
+        self.initNeighbors(neighbors)
+        self.genConstraints(queue, neighbors)
+
+        while queue:
+            pair = queue.pop()
+            x = pair[0]
+            y = pair[1]
+            a = pair[2]
+            b = pair[3]
+            if self.removeInconsistent(x, y, a, b):
+                if len(self.puzzle.domain[x][y]) == 0:
+                    print("Failed")
+                    return False
+                for n in neighbors[(x, y)]:
+                    queue.append((n[0], n[1], x, y))
+        return True
+
     # solve method overridden
-    def solve(self):
+    def solve(self, _inside_recursion=False):
+        if not _inside_recursion:
+            self.AC3()
         if self.isSolved():
             return True
         var = self.find_loc()
@@ -199,7 +249,7 @@ class BacktrackArcCons(ConstraintSolver):
             self.addOp()
             if self.constraintCheck(x, y, val):
                 self.puzzle.board[x][y] = val
-                result = self.solve()
+                result = self.solve(_inside_recursion=True)
                 if result:
                     return True
                 self.puzzle.board[x][y] = 0
@@ -242,7 +292,7 @@ class LocalSearchGenetic(ConstraintSolver):
 
     def crossMutate(self, mutation, parent1, parent2):
         # randomly select point for cross mutation, that doesn't include the ends
-        crossPoint = random.randint(1,80)
+        crossPoint = random.randint(1, 80)
         # first, delete mutation's board and replace with parent2's board
         mutation.board = parent2.board
         # then replace the first crossPoint number of cells with parent1's cells
@@ -260,10 +310,10 @@ class LocalSearchGenetic(ConstraintSolver):
     def mutate(self, mutation):
         # randomly change 3 cells
         for i in range(3):
-            x = random.randint(0,8)
-            y = random.randint(0,8)
-            if [x,y] not in self.protected:
-                mutation.board[x][y] = random.randint(1,9)
+            x = random.randint(0, 8)
+            y = random.randint(0, 8)
+            if [x, y] not in self.protected:
+                mutation.board[x][y] = random.randint(1, 9)
 
         # updating fitness and checking for new leader
         self.updateFitness(mutation)
@@ -280,7 +330,7 @@ class LocalSearchGenetic(ConstraintSolver):
         for x in range(9):
             for y in range(9):
                 if self.puzzle.board[x][y] != 0:
-                    self.protected.append([x,y])
+                    self.protected.append([x, y])
 
         # create the beginning population
         self.initPop(popSize)
@@ -305,15 +355,13 @@ class LocalSearchGenetic(ConstraintSolver):
                         position += 1
                     rankedTourney.insert(position, s)
             # replace the lowest ranked genome in tournament with a cross mutation of best 2 (currently decommissioned)
-            #self.crossMutate(rankedTourney[-1], rankedTourney[0], rankedTourney[1])
-            #self.addOp()
+            # self.crossMutate(rankedTourney[-1], rankedTourney[0], rankedTourney[1])
+            # self.addOp()
 
             # replace lowest ranked genome with a mutation of best ranked genome
             rankedTourney[-1].board = copy.deepcopy(rankedTourney[0].board)
             self.mutate(rankedTourney[-1])
             self.addOp()
-
-
 
 
 # puzzle class used to input and store the puzzles being solved
@@ -348,21 +396,28 @@ class Puzzle:
 
 test = Puzzle("puzzles/Evil-P5.csv")
 """
+test = Puzzle("puzzles/Easy-P1.csv")
+
 solvetest = BacktrackSimple(test)
 solvefwtest = BacktrackFWCheck(test)
+solveactest = BacktrackArcCons(test)
 solvetest.solve()
 solvefwtest.solve()
+solveactest.solve()
 print(solvetest.operations)
 solvetest.printBoard()
 print(solvefwtest.operations)
 solvefwtest.printBoard()
+print(solveactest.operations)
+solveactest.printBoard()
 
 """
 tournamentTest = LocalSearchGenetic(test)
-tournamentTest.solve(100, 10, 5000)
+tournamentTest.solve(100, 10, 20000)
 print(tournamentTest.operations)
 print(tournamentTest.leader.fitness)
 print(tournamentTest.leader.board)
+
 
 
 class Main:
