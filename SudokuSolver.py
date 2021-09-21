@@ -12,6 +12,7 @@ import numpy as np
 import csv
 import copy
 import random
+import os
 
 
 class ConstraintSolver:
@@ -277,8 +278,8 @@ class LocalSearchGenetic(ConstraintSolver):
         for x in range(9):
             for y in range(9):
                 # fill up whole board randomly
-                if [x,y] not in self.protected:
-                    genome.board[x][y] = random.randint(1,9)
+                if [x, y] not in self.protected:
+                    genome.board[x][y] = random.randint(1, 9)
         # keeping track of how good our best solution is
         self.updateFitness(genome)
         if genome.fitness < self.bestFitness:
@@ -394,36 +395,65 @@ class Puzzle:
         print(self.board)
 
 
-test = Puzzle("puzzles/Evil-P5.csv")
-"""
-test = Puzzle("puzzles/Easy-P1.csv")
-
-solvetest = BacktrackSimple(test)
-solvefwtest = BacktrackFWCheck(test)
-solveactest = BacktrackArcCons(test)
-solvetest.solve()
-solvefwtest.solve()
-solveactest.solve()
-print(solvetest.operations)
-solvetest.printBoard()
-print(solvefwtest.operations)
-solvefwtest.printBoard()
-print(solveactest.operations)
-solveactest.printBoard()
-
-"""
-tournamentTest = LocalSearchGenetic(test)
-tournamentTest.solve(100, 10, 20000)
-print(tournamentTest.operations)
-print(tournamentTest.leader.fitness)
-print(tournamentTest.leader.board)
-
-
-
+# Main class, for the code we are actually running
+# Currently just filled with various data collection things
 class Main:
 
     def __init__(self):
         pass
 
     def main(self):
-        pass
+
+        test = Puzzle("puzzles/Evil-P5.csv")
+        BS = BacktrackSimple(test)
+        BFW = BacktrackFWCheck(test)
+        BAC = BacktrackArcCons(test)
+        """
+        puzzlelist = []
+        bslist = []
+        bfwlist = []
+        baclist = []
+        galist = []
+        files = os.listdir("puzzles")
+
+        for f in files:
+            puzzlelist.append(Puzzle("puzzles/" + f))
+
+        for p in puzzlelist:
+
+            bslist.append(BacktrackSimple(p))
+            bfwlist.append(BacktrackFWCheck(p))
+            baclist.append(BacktrackArcCons(p))
+
+            galist.append(LocalSearchGenetic(p))
+
+        bsfile = open("bsresults.txt", "a")
+
+        for b in bslist:
+            b.solve()
+            bsfile.write(str(b.operations) + "\n")
+
+        bfwfile = open("bfwresults.txt", "a")
+
+        for b in bfwlist:
+            b.solve()
+            bfwfile.write(str(b.operations) + "\n")
+
+        bacfile = open("bacresults.txt", "a")
+
+        for b in baclist:
+            b.solve()
+            bacfile.write(str(b.operations) + "\n")
+
+        gafile = open("garesults.txt", "a")
+
+        for b in galist:
+            b.solve(100,10,5000)
+            print(b.operations)
+            print(b.leader.fitness)
+            gafile.write(str(b.operations) + "\n")
+        """
+
+
+main = Main()
+main.main()
