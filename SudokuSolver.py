@@ -269,7 +269,7 @@ class LocalSearchSAMC(ConstraintSolver):
         # variables for our schedule function:
         self.T0 = 1000
         self.tao = 50
-        self.Nt = 3
+        self.Nt = 1
 
     def createStartPoint(self):
         for x in range(9):
@@ -282,7 +282,7 @@ class LocalSearchSAMC(ConstraintSolver):
 
     # Rate of temperature decrease based on time t.  Returns temperature T.
     def schedule(self, t):
-        return (self.T0/(1+math.log(1+t))) - (0.003*t)
+        return (self.T0/(1+math.log(1+t))) - (0.005*t)
         #return (self.T0*self.tao)/(self.tao+self.Nt)
 
     def solve(self):
@@ -295,7 +295,7 @@ class LocalSearchSAMC(ConstraintSolver):
         for t in range(100000):
             T = self.schedule(t)
             if T <= 0:
-                return self.puzzle.board
+                return self.puzzle.fitness
             next = copy.deepcopy(self.puzzle)
             # randomly change Nt number of cells
             for i in range(self.Nt):
@@ -311,9 +311,9 @@ class LocalSearchSAMC(ConstraintSolver):
             elif math.exp(dif/(self.k * T)) > random.random():
                 self.puzzle.board = copy.deepcopy(next.board)
                 self.updateFitness(self.puzzle)
-            if t % 1000 == 0:
-                print(T)
-                print(self.puzzle.fitness)
+            #if t % 1000 == 0:
+            #    print(T)
+            #    print(self.puzzle.fitness)
         print(self.puzzle.board)
 
 
@@ -450,10 +450,11 @@ class Puzzle:
     def printPuzzle(self):
         print(self.board)
 
+print("Easy puzzle 1:")
+e1 = Puzzle("puzzles/Easy-P1.csv")
+annealTest = LocalSearchSAMC(e1)
+print(annealTest.solve())
 
-test = Puzzle("puzzles/Med-P5.csv")
-annealTest = LocalSearchSAMC(test)
-annealTest.solve()
 """
 test = Puzzle("puzzles/Easy-P1.csv")
 
